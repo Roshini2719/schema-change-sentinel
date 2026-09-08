@@ -1,0 +1,44 @@
+# ── Python ────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# ── Virtual Environment ──────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── IDE / Editor ─────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Environment Variables ────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Database ─────────────────────────────────────
+*.db
+*.sqlite3
+
+# ── Docker ───────────────────────────────────────
+docker-compose.override.yml
+
+# ── Testing ──────────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ── Misc ─────────────────────────────────────────
+*.log
+*.pid
