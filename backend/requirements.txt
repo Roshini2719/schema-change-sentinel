@@ -7,8 +7,8 @@ pydantic-settings==2.5.2
 # ── Database ──────────────────────────────────────
 sqlalchemy==2.0.35
 alembic==1.13.3
-asyncpg==0.29.0
-psycopg2-binary==2.9.9
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
 
 # ── Auth ──────────────────────────────────────────
 python-jose[cryptography]==3.3.0
