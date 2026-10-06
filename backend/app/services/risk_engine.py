@@ -1,67 +1,95 @@
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any
+from ..models.models import SchemaChange, DownstreamDependency
 
-def calculate_risk(
-    schema_changes: Dict[str, Any],
-    contract_result: Optional[Dict[str, Any]] = None,
-    dependency_result: Optional[Dict[str, Any]] = None,
-    pipeline_health: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+class RiskEngine:
+    """
+    Mathematical Risk Engine for Schema Sentinel.
     
-    base_scores = {"CRITICAL": 100, "HIGH": 75, "MEDIUM": 50, "LOW": 25, "NONE": 0}
-    severity = schema_changes.get("severity", "NONE")
-    base_score = base_scores.get(severity, 0)
+    Formula:
+    RiskScore = min(100, Σ (SeverityWeight_c) + (PipelineHealthFactor) + Σ (DependencyCriticality_dep))
     
-    fin_esc = 0
-    dep_esc = 0
-    pipe_esc = 0
-    contract_esc = 0
-    reasons = []
-    
-    for change in schema_changes.get("changes", []):
-        reasons.append(change.get("reason", "Unknown change"))
-            
-    if dependency_result and dependency_result.get("total_affected", 0) > 0:
-        if dependency_result.get("has_critical"):
-            dep_esc += 20
-            reasons.append("Critical downstream dependency affected")
-        else:
-            dep_esc += 10
-            reasons.append("Downstream dependency affected")
-            
-        extra = dependency_result.get("total_affected", 0) - 1
-        if extra > 0:
-            dep_esc += (extra * 5)
-            
-    if pipeline_health and not pipeline_health.get("healthy", True):
-        pipe_esc += 15
-        reasons.append("Pipeline health issues detected")
+    Weights:
+      Severity:
+        CRITICAL: 40
+        HIGH: 25
+        MEDIUM: 10
+        LOW: 2
+        INFO: 0
         
-    if contract_result and not contract_result.get("valid", True):
-        contract_esc += 10
-        reasons.append("Contract violations detected")
+      Pipeline Health:
+        Rejection Ratio * 20 (0 to 20)
         
-    total_score = base_score + fin_esc + dep_esc + pipe_esc + contract_esc
-    total_score = min(total_score, 100)
-    
-    final_severity = "NONE"
-    if total_score >= 100:
-        final_severity = "CRITICAL"
-    elif total_score >= 75:
-        final_severity = "HIGH"
-    elif total_score >= 50:
-        final_severity = "MEDIUM"
-    elif total_score >= 25:
-        final_severity = "LOW"
-        
-    return {
-        "risk_score": total_score,
-        "severity": final_severity,
-        "reasons": reasons,
-        "breakdown": {
-            "base_score": base_score,
-            "financial_escalation": fin_esc,
-            "dependency_escalation": dep_esc,
-            "pipeline_escalation": pipe_esc,
-            "contract_escalation": contract_esc
-        }
+      Consumer Dependency Criticality:
+        CRITICAL: 15
+        HIGH: 10
+        MEDIUM: 5
+        LOW: 2
+    """
+
+    SEVERITY_WEIGHTS = {
+        'CRITICAL': 40,
+        'HIGH': 25,
+        'MEDIUM': 10,
+        'LOW': 2,
+        'INFO': 0
     }
+
+    DEPENDENCY_CRITICALITY_WEIGHTS = {
+        'CRITICAL': 15,
+        'HIGH': 10,
+        'MEDIUM': 5,
+        'LOW': 2
+    }
+
+    @classmethod
+    def calculate_risk(
+        cls,
+        changes: List[SchemaChange],
+        affected_dependencies: List[Dict[str, Any]],
+        recent_rejection_rate: float = 0.0
+    ) -> Dict[str, Any]:
+        
+        severity_score = 0
+        has_critical = False
+        breaking_count = 0
+
+        for change in changes:
+            sev = change.severity.upper() if change.severity else 'INFO'
+            severity_score += cls.SEVERITY_WEIGHTS.get(sev, 0)
+            if change.category == 'BREAKING' or sev == 'CRITICAL':
+                has_critical = True
+                breaking_count += 1
+
+        pipeline_health_score = min(20.0, recent_rejection_rate * 20.0)
+
+        dependency_score = 0
+        for dep in affected_dependencies:
+            crit = dep.get('criticality', 'MEDIUM').upper()
+            dependency_score += cls.DEPENDENCY_CRITICALITY_WEIGHTS.get(crit, 5)
+
+        raw_score = severity_score + pipeline_health_score + dependency_score
+        final_risk_score = min(100.0, float(raw_score))
+
+        # Gating logic
+        if has_critical or final_risk_score >= 50.0:
+            decision = 'BLOCK'
+            reason = f'Unsafe publication blocked! Risk score {final_risk_score:.1f}/100 exceeds threshold (or critical breaking change present).'
+        elif final_risk_score >= 20.0:
+            decision = 'WARN'
+            reason = f'Warning: Moderate schema risk detected ({final_risk_score:.1f}/100). Manual review recommended.'
+        else:
+            decision = 'ALLOW'
+            reason = f'Schema validation passed safely. Risk score {final_risk_score:.1f}/100 is within acceptable limits.'
+
+        return {
+            'risk_score': round(final_risk_score, 1),
+            'decision': decision,
+            'reason': reason,
+            'breakdown': {
+                'severity_score': severity_score,
+                'pipeline_health_score': round(pipeline_health_score, 1),
+                'dependency_score': dependency_score,
+                'breaking_changes_count': breaking_count,
+                'affected_dependencies_count': len(affected_dependencies)
+            }
+        }

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PartnerATransactionSchema",
+  "type": "object",
+  "required": ["transaction_id", "partner_id", "timestamp", "amount", "currency", "status"],
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique transaction identifier"
+    },
+    "partner_id": {
+      "type": "string",
+      "description": "Partner organization code"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp"
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0.01,
+      "description": "Transaction value in specified currency"
+    },
+    "currency": {
+      "type": "string",
+      "enum": ["USD", "EUR", "GBP", "INR", "CAD"],
+      "description": "ISO 4217 currency code"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "COMPLETED", "FAILED", "SETTLED"],
+      "description": "Current transaction state"
+    },
+    "merchant_id": {
+      "type": ["string", "null"],
+      "description": "Optional merchant identifier"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,46 +1,22 @@
-import re
-from typing import Dict, Any, List, Set
+from typing import List
+from ..models.models import SchemaChange, DownstreamDependency, DependencyColumn
 
-def extract_fields_from_query(query: str) -> Set[str]:
-    """Extract field names from a SQL query string."""
-    fields = set()
-    # match common sql identifiers, ignore keywords (very basic regex)
-    words = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', query)
-    keywords = {"select", "from", "where", "and", "or", "group", "by", "order", "having", "sum", "avg", "count", "min", "max", "as", "on", "join", "left", "right", "inner"}
-    for word in words:
-        if word.lower() not in keywords:
-            fields.add(word)
-    return fields
-
-def analyze_dependencies(
-    changed_fields: List[str],
-    dependencies: List[Dict[str, Any]]
-) -> Dict[str, Any]:
-    """Analyze impact of changed fields on downstream dependencies."""
-    affected = []
-    has_critical = False
+def analyze_impact(db, organisation_id, changes: List[SchemaChange]) -> List[dict]:
+    impacted = []
+    change_cols = {c.column_name: c for c in changes}
     
-    changed_set = set(changed_fields)
-    
-    for dep in dependencies:
-        dep_fields = set(dep.get("fields", []))
-        if not dep_fields:
-            query = dep.get("query_text", "")
-            if query:
-                dep_fields = extract_fields_from_query(query)
-                
-        intersection = changed_set.intersection(dep_fields)
-        if intersection:
-            affected.append({
-                "name": dep.get("name", "unknown"),
-                "affected_fields": list(intersection),
-                "criticality": dep.get("criticality", "medium")
+    deps = db.query(DownstreamDependency).filter_by(organisation_id=organisation_id).all()
+    for dep in deps:
+        cols = db.query(DependencyColumn).filter_by(dependency_id=dep.id).all()
+        affected_cols = [c for c in cols if c.column_name in change_cols]
+        if affected_cols:
+            critical_hits = [c for c in affected_cols if c.is_critical and change_cols[c.column_name].category == 'BREAKING']
+            impact = 'HIGH' if critical_hits else 'LOW'
+            impacted.append({
+                'dependency_name': dep.name,
+                'dependency_id': dep.id,
+                'affected_columns': [c.column_name for c in affected_cols],
+                'criticality': dep.criticality,
+                'impact': impact
             })
-            if dep.get("criticality", "").lower() == "critical":
-                has_critical = True
-                
-    return {
-        "affected_dependencies": affected,
-        "total_affected": len(affected),
-        "has_critical": has_critical
-    }
+    return impacted

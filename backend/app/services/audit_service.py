@@ -1,27 +1,16 @@
-from sqlalchemy.orm import Session
-from app.models.audit_log import AuditLog
-from typing import Optional
-import json
+from ..models.models import AuditLog
 
-
-def log_audit_event(
-    db: Session,
-    organization_id: int,
-    user_id: Optional[int],
-    action: str,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[int] = None,
-    details: Optional[dict] = None,
-) -> AuditLog:
-    log_entry = AuditLog(
-        organization_id=organization_id,
+def log_action(db, organisation_id, user_id, user_email, action, resource_type=None, resource_id=None, details=None):
+    audit_log = AuditLog(
+        organisation_id=organisation_id,
         user_id=user_id,
+        user_email=user_email,
         action=action,
         resource_type=resource_type,
         resource_id=resource_id,
-        details=json.dumps(details) if details else None,
+        details=details
     )
-    db.add(log_entry)
+    db.add(audit_log)
     db.commit()
-    db.refresh(log_entry)
-    return log_entry
+    db.refresh(audit_log)
+    return audit_log

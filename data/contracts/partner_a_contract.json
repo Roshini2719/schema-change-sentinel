@@ -1,0 +1,13 @@
+{
+  "contract_name": "Partner A Transaction Contract",
+  "partner": "Partner A",
+  "version": 1,
+  "rules": [
+    {"column_name": "transaction_id", "type": "string", "required": true, "nullable": false},
+    {"column_name": "customer_id", "type": "string", "required": true, "nullable": false},
+    {"column_name": "amount", "type": "decimal", "required": true, "nullable": false, "min_value": 0},
+    {"column_name": "currency", "type": "string", "required": true, "nullable": false, "allowed_values": ["USD", "EUR", "GBP", "INR"]},
+    {"column_name": "transaction_date", "type": "datetime", "required": true, "nullable": false},
+    {"column_name": "status", "type": "string", "required": true, "nullable": false, "allowed_values": ["COMPLETED", "PENDING", "FAILED", "REVERSED"]}
+  ]
+}

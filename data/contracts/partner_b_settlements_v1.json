@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PartnerBSettlementSchema",
+  "type": "object",
+  "required": ["settlement_id", "batch_date", "gross_amount", "net_amount", "fee_amount"],
+  "properties": {
+    "settlement_id": {
+      "type": "string",
+      "description": "Unique settlement batch identifier"
+    },
+    "batch_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Settlement date (YYYY-MM-DD)"
+    },
+    "gross_amount": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Total gross settlement amount"
+    },
+    "net_amount": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Net amount paid out after fees"
+    },
+    "fee_amount": {
+      "type": "number",
+      "minimum": 0.0,
+      "description": "Deducted processing fees"
+    }
+  },
+  "additionalProperties": false
+}

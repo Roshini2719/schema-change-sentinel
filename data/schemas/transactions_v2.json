@@ -1,0 +1,16 @@
+{
+  "schema_name": "transactions",
+  "version": 2,
+  "columns": [
+    {"name": "transaction_id", "type": "string", "required": true, "nullable": false, "is_primary_key": true},
+    {"name": "customer_id", "type": "string", "required": true, "nullable": false},
+    {"name": "merchant_id", "type": "string", "required": false, "nullable": true},
+    {"name": "merchant_category", "type": "string", "required": false, "nullable": true},
+    {"name": "amount", "type": "decimal", "required": true, "nullable": false},
+    {"name": "currency", "type": "string", "required": true, "nullable": false},
+    {"name": "transaction_date", "type": "datetime", "required": true, "nullable": false},
+    {"name": "status", "type": "string", "required": true, "nullable": false},
+    {"name": "payment_method", "type": "string", "required": false, "nullable": true},
+    {"name": "country", "type": "string", "required": false, "nullable": true}
+  ]
+}

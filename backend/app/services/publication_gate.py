@@ -1,74 +1,17 @@
-from typing import Dict, Any, Optional, List
-from app.services.schema_detector import detect_schema_changes
-from app.services.contract_validator import validate_contract
-from app.services.dependency_analyzer import analyze_dependencies
-from app.services.pipeline_monitor import check_pipeline_health
-from app.services.risk_engine import calculate_risk
+from typing import List
+from ..models.models import SchemaChange, PublicationDecision
+from .schema_sentinel import has_breaking_changes
 
-def evaluate_publication(
-    data_source_id: int,
-    new_schema: Dict[str, Any],
-    old_schema: Optional[Dict[str, Any]] = None,
-    contract: Optional[Dict[str, Any]] = None,
-    dependencies: Optional[List[Dict[str, Any]]] = None,
-    pipeline_runs: Optional[List[Dict[str, Any]]] = None
-) -> Dict[str, Any]:
-    
-    if old_schema is None:
-        return {
-            "decision": "ALLOW",
-            "risk_score": 0,
-            "severity": "NONE",
-            "changes": [],
-            "contract_violations": [],
-            "affected_dependencies": [],
-            "pipeline_issues": [],
-            "reasons": ["Initial schema registration allowed."]
-        }
-        
-    try:
-        schema_changes = detect_schema_changes(old_schema, new_schema)
-        
-        contract_result = None
-        if contract:
-            contract_result = validate_contract(new_schema, contract)
-            
-        dependency_result = None
-        if dependencies:
-            changed_fields = [c["field"] for c in schema_changes.get("changes", [])]
-            dependency_result = analyze_dependencies(changed_fields, dependencies)
-            
-        pipeline_health = None
-        if pipeline_runs:
-            pipeline_health = check_pipeline_health(pipeline_runs)
-            
-        risk = calculate_risk(schema_changes, contract_result, dependency_result, pipeline_health)
-        risk_score = risk.get("risk_score", 0)
-        
-        decision = "ALLOW"
-        if risk_score >= 75:
-            decision = "BLOCK"
-        elif risk_score >= 50:
-            decision = "WARN"
-            
-        return {
-            "decision": decision,
-            "risk_score": risk_score,
-            "severity": risk.get("severity", "NONE"),
-            "changes": schema_changes.get("changes", []),
-            "contract_violations": contract_result.get("violations", []) if contract_result else [],
-            "affected_dependencies": dependency_result.get("affected_dependencies", []) if dependency_result else [],
-            "pipeline_issues": pipeline_health.get("issues", []) if pipeline_health else [],
-            "reasons": risk.get("reasons", [])
-        }
-    except Exception as e:
-        return {
-            "decision": "BLOCK",
-            "risk_score": 100,
-            "severity": "CRITICAL",
-            "changes": [],
-            "contract_violations": [],
-            "affected_dependencies": [],
-            "pipeline_issues": [],
-            "reasons": ["Publication blocked because schema safety could not be verified."]
-        }
+def evaluate_publication(changes: List[SchemaChange], affected_deps: List) -> PublicationDecision:
+    if has_breaking_changes(changes):
+        return PublicationDecision(decision='BLOCK', reason='Breaking changes detected', breaking_changes=len([c for c in changes if c.category == 'BREAKING']), affected_dependencies=len(affected_deps))
+    return PublicationDecision(decision='ALLOW', reason='No breaking changes', breaking_changes=0, affected_dependencies=len(affected_deps))
+
+def process_override(db, pipeline_run_id, user_id, justification) -> PublicationDecision:
+    decision = db.query(PublicationDecision).filter_by(pipeline_run_id=pipeline_run_id).first()
+    if decision:
+        decision.decision = 'OVERRIDE'
+        decision.decided_by = user_id
+        decision.override_justification = justification
+        db.commit()
+    return decision
