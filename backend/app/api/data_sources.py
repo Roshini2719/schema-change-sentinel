@@ -13,6 +13,13 @@ router = APIRouter(prefix="/api/data-sources", tags=["data_sources"])
 def list_data_sources(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(DataSource).filter(DataSource.organization_id == current_user.organization_id).all()
 
+@router.get("/{ds_id}", response_model=DataSourceResponse)
+def get_data_source(ds_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    ds = db.query(DataSource).filter(DataSource.id == ds_id, DataSource.organization_id == current_user.organization_id).first()
+    if not ds:
+        raise HTTPException(status_code=404, detail="Data source not found")
+    return ds
+
 @router.post("/", response_model=DataSourceResponse)
 def create_data_source(
     ds: DataSourceCreate,

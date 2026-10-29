@@ -327,3 +327,23 @@ def _consumers_using_column(column_name: str, dependencies: List[Any]) -> List[s
         if column_name in cols_used:
             result.append(dep.consumer_name)
     return result
+
+def has_breaking_changes(changes: List[Any]) -> bool:
+    if not changes:
+        return False
+    for c in changes:
+        if hasattr(c, "category") and str(c.category).upper() in ("BREAKING", "CHANGECATEGORY.BREAKING"):
+            return True
+        if hasattr(c, "severity") and c.severity in ("CRITICAL", "HIGH"):
+            return True
+        if isinstance(c, dict) and (c.get("breaking") or c.get("severity") in ("CRITICAL", "HIGH")):
+            return True
+    return False
+
+def get_changes_summary(changes: List[Any]) -> dict:
+    breaking = [c for c in changes if (hasattr(c, "severity") and c.severity in ("CRITICAL", "HIGH")) or (isinstance(c, dict) and c.get("severity") in ("CRITICAL", "HIGH"))]
+    return {
+        "total_changes": len(changes),
+        "breaking_changes": len(breaking),
+        "has_breaking": len(breaking) > 0
+    }

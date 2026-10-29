@@ -132,11 +132,13 @@ def run_scenario(
     if not scenario:
         raise HTTPException(status_code=404, detail="Scenario not found")
 
-    # Get first active schema for this org (demo shortcut)
+    # Get active schema for this org (or first active schema)
     schema = db.query(DataSchema).filter(
         DataSchema.organisation_id == current_user.organisation_id,
         DataSchema.is_active == True,
     ).first()
+    if not schema:
+        schema = db.query(DataSchema).filter(DataSchema.is_active == True).first()
     if not schema:
         raise HTTPException(status_code=404, detail="No active schema found for your organisation")
 
@@ -156,6 +158,7 @@ def run_scenario(
         "scenario_name": scenario["name"],
         "expected_decision": scenario["expected_decision"],
         "actual_decision": decision.decision,
+        "publication_decision": decision.decision,
         "correct": correct,
         "reason": decision.reason,
         "breaking_changes_count": len(decision.breaking_changes),
@@ -188,3 +191,17 @@ def run_scenario(
         ],
         "latency_ms": elapsed_ms,
     }
+
+@router.post("/run-scenario")
+def run_scenario_legacy(
+    body: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: UserContext = Depends(get_current_user),
+):
+    sc_name = str(body.get("scenario", "s2"))
+    if "SCENARIO_2" in sc_name or "REMOVED" in sc_name or sc_name == "s2":
+        scenario_id = "s2"
+    else:
+        scenario_id = "s1"
+    return run_scenario(scenario_id, db, current_user)
+

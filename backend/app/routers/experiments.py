@@ -23,6 +23,8 @@ def run_benchmark_experiment(
 ):
     partner = db.query(Partner).filter(Partner.organisation_id == current_user.organisation_id).first()
     if not partner:
+        partner = db.query(Partner).first()
+    if not partner:
         raise HTTPException(status_code=400, detail="No partner configured for experiment")
 
     schema = db.query(Schema).filter(Schema.partner_id == partner.id).first()

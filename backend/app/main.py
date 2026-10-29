@@ -5,7 +5,8 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .models.models import Base, engine, SessionLocal
-from .routers import auth, schemas, validate, audit, admin, demo
+from .routers import auth, schemas, validate, audit, admin, demo, dashboard, experiments, contracts, dependencies, validation
+from .api import partners as api_partners, data_sources as api_data_sources
 from .services.seed_service import seed_database
 from .core.config import settings
 
@@ -36,6 +37,13 @@ app.include_router(validate.router)
 app.include_router(audit.router)
 app.include_router(admin.router)
 app.include_router(demo.router)
+app.include_router(dashboard.router)
+app.include_router(experiments.router)
+app.include_router(contracts.router)
+app.include_router(dependencies.router)
+app.include_router(validation.router)
+app.include_router(api_partners.router)
+app.include_router(api_data_sources.router)
 
 @app.on_event("startup")
 def startup():
@@ -56,4 +64,4 @@ def health():
 
 @app.get("/")
 def root():
-    return {"message": "Schema Change Sentinel API", "docs": "/docs"}
+    return {"message": "Schema Change Sentinel API", "docs": "/docs", "status": "ONLINE"}

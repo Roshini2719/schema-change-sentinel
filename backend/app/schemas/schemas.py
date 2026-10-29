@@ -205,3 +205,79 @@ class ExperimentResult(BaseModel):
     baseline_correct: bool
     sentinel_correct: bool
     latency_ms: Optional[float] = None
+
+class ContractRuleCreate(BaseModel):
+    column_name: str
+    data_type: str
+    is_required: bool = True
+    is_nullable: bool = False
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    allowed_values: Optional[str] = None
+    regex_pattern: Optional[str] = None
+    description: Optional[str] = None
+
+class ContractRuleResponse(ContractRuleCreate):
+    id: str
+    contract_id: str
+    model_config = ConfigDict(from_attributes=True)
+
+class DataContractCreate(BaseModel):
+    partner_id: str
+    contract_name: str
+    version: int = 1
+    rules: Optional[List[ContractRuleCreate]] = None
+
+class DataContractResponse(BaseModel):
+    id: str
+    organisation_id: str
+    partner_id: str
+    contract_name: Optional[str] = None
+    version: int = 1
+    status: str = "ACTIVE"
+    created_at: datetime
+    rules: Optional[List[ContractRuleResponse]] = None
+    model_config = ConfigDict(from_attributes=True)
+
+class PipelineRunCreate(BaseModel):
+    partner_id: str
+    schema_version: int = 1
+    records_received: int = 0
+    incoming_columns: List[dict] = []
+    record_data: Optional[List[dict]] = None
+
+class AlertResponse(BaseModel):
+    id: str
+    organisation_id: str
+    pipeline_run_id: Optional[str] = None
+    severity: str
+    title: str
+    message: str
+    is_read: bool = False
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class DashboardMetrics(BaseModel):
+    total_runs: int
+    successful_runs: int
+    blocked_runs: int
+    breaking_changes: int
+    affected_consumers: int
+    total_partners: int
+    total_organisations: int
+    recent_alerts: List[AlertResponse]
+    runs_over_time: List[dict]
+    changes_by_severity: dict
+
+class PublicationOverrideRequest(BaseModel):
+    pipeline_run_id: str
+    justification: str
+
+class DependencyColumnCreate(BaseModel):
+    column_name: str
+    is_critical: bool = True
+
+class DependencyColumnResponse(DependencyColumnCreate):
+    id: str
+    dependency_id: str
+    model_config = ConfigDict(from_attributes=True)

@@ -1,0 +1,9 @@
+{
+  "baseline_accuracy_pct": 75,
+  "sentinel_accuracy_pct": 100,
+  "total_historical_runs": 50,
+  "breaking_runs": 20,
+  "baseline_unsafe_pub_rate_pct": 30.0,
+  "sentinel_unsafe_pub_rate_pct": 0.0,
+  "improvement_pct": 30.0
+}

@@ -2,11 +2,45 @@ from typing import Optional, Dict, Any, List, Set
 
 FINANCIAL_FIELDS = {"amount", "price", "balance", "total", "fee", "cost", "rate", "interest", "payment", "credit", "debit"}
 
+class DetectedChange(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__dict__ = self
+
+    @property
+    def breaking(self) -> bool:
+        return self.get("is_breaking", False) or self.get("severity") in ("CRITICAL", "HIGH")
+
+class DetectedChangesList(list):
+    def __init__(self, items, metadata=None):
+        super().__init__(items)
+        self.metadata = metadata or {}
+
+    def get(self, key, default=None):
+        return self.metadata.get(key, default)
+
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            return self.metadata[item]
+        return super().__getitem__(item)
+
+    @property
+    def breaking(self) -> bool:
+        return self.metadata.get("breaking", False)
+
+    @property
+    def severity(self) -> str:
+        return self.metadata.get("severity", "NONE")
+
+    @property
+    def risk_score(self) -> int:
+        return self.metadata.get("risk_score", 0)
+
 def detect_schema_changes(
     old_schema: Dict[str, Any],
     new_schema: Dict[str, Any],
     downstream_fields: Optional[Set[str]] = None
-) -> Dict[str, Any]:
+) -> DetectedChangesList:
     if downstream_fields is None:
         downstream_fields = set()
         
@@ -39,30 +73,33 @@ def detect_schema_changes(
     for field_name, old_field in old_fields.items():
         if field_name not in new_fields:
             if old_field.get("required", True):
-                changes.append({
+                changes.append(DetectedChange({
                     "field": field_name,
                     "change_type": "REQUIRED_FIELD_REMOVED",
                     "severity": "CRITICAL",
+                    "is_breaking": True,
                     "reason": f"Required field '{field_name}' was removed."
-                })
+                }))
                 breaking = True
                 update_severity("CRITICAL")
             elif field_name in downstream_fields:
-                changes.append({
+                changes.append(DetectedChange({
                     "field": field_name,
                     "change_type": "DOWNSTREAM_FIELD_REMOVED",
                     "severity": "HIGH",
+                    "is_breaking": True,
                     "reason": f"Field '{field_name}' used downstream was removed."
-                })
+                }))
                 breaking = True
                 update_severity("HIGH")
             else:
-                changes.append({
+                changes.append(DetectedChange({
                     "field": field_name,
                     "change_type": "OPTIONAL_FIELD_REMOVED",
                     "severity": "MEDIUM",
+                    "is_breaking": False,
                     "reason": f"Optional field '{field_name}' was removed."
-                })
+                }))
                 update_severity("MEDIUM")
             continue
             
@@ -70,23 +107,25 @@ def detect_schema_changes(
         
         # primary key removed
         if old_field.get("primary_key", False) and not new_field.get("primary_key", False):
-            changes.append({
+            changes.append(DetectedChange({
                 "field": field_name,
                 "change_type": "PRIMARY_KEY_REMOVED",
                 "severity": "CRITICAL",
+                "is_breaking": True,
                 "reason": f"Primary key constraint removed from '{field_name}'."
-            })
+            }))
             breaking = True
             update_severity("CRITICAL")
             
         # nullability changed
         if old_field.get("nullable", False) and not new_field.get("nullable", False):
-            changes.append({
+            changes.append(DetectedChange({
                 "field": field_name,
                 "change_type": "NULLABLE_TO_NON_NULLABLE",
                 "severity": "HIGH",
+                "is_breaking": True,
                 "reason": f"Field '{field_name}' changed from nullable to non-nullable."
-            })
+            }))
             breaking = True
             update_severity("HIGH")
             
@@ -100,14 +139,15 @@ def detect_schema_changes(
             if is_financial(field_name):
                 severity = "CRITICAL"
                 
-            changes.append({
+            changes.append(DetectedChange({
                 "field": field_name,
                 "change_type": change_type,
                 "severity": severity,
+                "is_breaking": True,
                 "reason": f"Type changed from {old_type} to {new_type}.",
                 "old_type": old_type,
                 "new_type": new_type
-            })
+            }))
             breaking = True
             update_severity(severity)
             
@@ -117,40 +157,44 @@ def detect_schema_changes(
         if isinstance(old_values, list) and isinstance(new_values, list):
             removed = set(old_values) - set(new_values)
             if removed:
-                changes.append({
+                changes.append(DetectedChange({
                     "field": field_name,
                     "change_type": "ENUM_VALUE_REMOVED",
                     "severity": "HIGH",
+                    "is_breaking": True,
                     "reason": f"Enum values removed: {', '.join(removed)}"
-                })
+                }))
                 breaking = True
                 update_severity("HIGH")
 
     for field_name, new_field in new_fields.items():
         if field_name not in old_fields:
             if new_field.get("required", True) and not new_field.get("default_value"):
-                changes.append({
+                changes.append(DetectedChange({
                     "field": field_name,
                     "change_type": "REQUIRED_FIELD_ADDED",
                     "severity": "HIGH",
+                    "is_breaking": True,
                     "reason": f"Required field '{field_name}' added without default value."
-                })
+                }))
                 breaking = True
                 update_severity("HIGH")
             else:
-                changes.append({
+                changes.append(DetectedChange({
                     "field": field_name,
                     "change_type": "FIELD_ADDED",
                     "severity": "LOW",
+                    "is_breaking": False,
                     "reason": f"New field '{field_name}' added."
-                })
+                }))
                 update_severity("LOW")
                 
     risk_score = {"NONE": 0, "LOW": 25, "MEDIUM": 50, "HIGH": 75, "CRITICAL": 100}[max_severity]
     
-    return {
+    metadata = {
         "breaking": breaking,
         "severity": max_severity,
         "risk_score": risk_score,
         "changes": changes
     }
+    return DetectedChangesList(changes, metadata)

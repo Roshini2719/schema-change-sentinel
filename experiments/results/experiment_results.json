@@ -13,8 +13,8 @@
       "sentinel_decision": "ALLOW",
       "baseline_correct": true,
       "sentinel_correct": true,
-      "baseline_latency_ms": 0.002,
-      "sentinel_latency_ms": 0.016,
+      "baseline_latency_ms": 0.003,
+      "sentinel_latency_ms": 0.019,
       "breaking_changes": 0,
       "warning_changes": 0,
       "is_fail_closed": false
@@ -28,7 +28,7 @@
       "baseline_correct": true,
       "sentinel_correct": true,
       "baseline_latency_ms": 0.001,
-      "sentinel_latency_ms": 0.017,
+      "sentinel_latency_ms": 0.016,
       "breaking_changes": 1,
       "warning_changes": 0,
       "is_fail_closed": false
@@ -42,7 +42,7 @@
       "baseline_correct": false,
       "sentinel_correct": true,
       "baseline_latency_ms": 0.001,
-      "sentinel_latency_ms": 0.012,
+      "sentinel_latency_ms": 0.013,
       "breaking_changes": 1,
       "warning_changes": 0,
       "is_fail_closed": false
@@ -56,7 +56,7 @@
       "baseline_correct": false,
       "sentinel_correct": true,
       "baseline_latency_ms": 0.001,
-      "sentinel_latency_ms": 0.008,
+      "sentinel_latency_ms": 0.009,
       "breaking_changes": 0,
       "warning_changes": 1,
       "is_fail_closed": false
@@ -70,7 +70,7 @@
       "baseline_correct": false,
       "sentinel_correct": true,
       "baseline_latency_ms": 0.001,
-      "sentinel_latency_ms": 0.009,
+      "sentinel_latency_ms": 0.008,
       "breaking_changes": 1,
       "warning_changes": 0,
       "is_fail_closed": false
@@ -111,7 +111,7 @@
       "sentinel_decision": "BLOCK",
       "baseline_correct": false,
       "sentinel_correct": true,
-      "baseline_latency_ms": 0.002,
+      "baseline_latency_ms": 0.001,
       "sentinel_latency_ms": 0.011,
       "breaking_changes": 1,
       "warning_changes": 0,
@@ -125,8 +125,8 @@
       "sentinel_decision": "BLOCK",
       "baseline_correct": true,
       "sentinel_correct": true,
-      "baseline_latency_ms": 0.001,
-      "sentinel_latency_ms": 0.008,
+      "baseline_latency_ms": 0.002,
+      "sentinel_latency_ms": 0.009,
       "breaking_changes": 1,
       "warning_changes": 0,
       "is_fail_closed": false
@@ -140,7 +140,7 @@
       "baseline_correct": false,
       "sentinel_correct": true,
       "baseline_latency_ms": 0.001,
-      "sentinel_latency_ms": 0.009,
+      "sentinel_latency_ms": 0.01,
       "breaking_changes": 1,
       "warning_changes": 0,
       "is_fail_closed": false

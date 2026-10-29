@@ -1,14 +1,48 @@
 from typing import Dict, Any, List
 
+class ContractValidationResult(dict):
+    @property
+    def is_valid(self) -> bool:
+        return self.get("valid", True)
+
 def validate_contract(
     schema: Dict[str, Any],
     contract: Dict[str, Any]
-) -> Dict[str, Any]:
+) -> ContractValidationResult:
     valid = True
     violations = []
     
     schema_fields = schema.get("fields", {})
     
+    # Process "rules" list if provided
+    rules = contract.get("rules", [])
+    for rule in rules:
+        field_name = rule.get("field")
+        expected_type = rule.get("type")
+        is_required = rule.get("required", False)
+        
+        if is_required and field_name not in schema_fields:
+            valid = False
+            violations.append({
+                "rule": "required",
+                "field": field_name,
+                "expected": "present",
+                "actual": "missing",
+                "severity": "CRITICAL"
+            })
+        elif field_name in schema_fields and expected_type:
+            actual_type = schema_fields[field_name].get("type")
+            if actual_type != expected_type:
+                valid = False
+                violations.append({
+                    "rule": "type_mismatch",
+                    "field": field_name,
+                    "expected": expected_type,
+                    "actual": actual_type,
+                    "severity": "HIGH"
+                })
+
+    # Also handle map-based rules
     for req_field in contract.get("required_fields", []):
         if req_field not in schema_fields:
             valid = False
@@ -42,7 +76,7 @@ def validate_contract(
         valid = False
         violations.append({"rule": "minimum_fields", "field": "all", "expected": str(min_fields), "actual": str(len(schema_fields)), "severity": "MEDIUM"})
         
-    return {
+    return ContractValidationResult({
         "valid": valid,
         "violations": violations
-    }
+    })
