@@ -1,14 +1,26 @@
+"""
+FastAPI application entry point.
+"""
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database.connection import init_db
-from .routers import auth, schemas, contracts, dependencies, validation, dashboard, experiments, demo
+from .models.models import Base, engine, SessionLocal
+from .routers import auth, schemas, validate, audit, admin, demo
+from .services.seed_service import seed_database
+from .core.config import settings
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="🛡️ Schema Sentinel API",
-    description="Detecting Breaking Schema Changes Before Unsafe Data Publication",
-    version="1.0.0"
+    title="Schema Change Sentinel",
+    description="Detect breaking upstream schema changes and block unsafe data publication.",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
+# CORS — allow React dev server and any localhost port
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,23 +29,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def on_startup():
-    init_db()
-
+# Register routers
 app.include_router(auth.router)
 app.include_router(schemas.router)
-app.include_router(contracts.router)
-app.include_router(dependencies.router)
-app.include_router(validation.router)
-app.include_router(dashboard.router)
-app.include_router(experiments.router)
+app.include_router(validate.router)
+app.include_router(audit.router)
+app.include_router(admin.router)
 app.include_router(demo.router)
 
+@app.on_event("startup")
+def startup():
+    logger.info("Creating database tables...")
+    Base.metadata.create_all(bind=engine)
+    if settings.DEMO_MODE:
+        logger.info("DEMO_MODE enabled — seeding database...")
+        db = SessionLocal()
+        try:
+            seed_database(db)
+        finally:
+            db.close()
+    logger.info("Schema Change Sentinel started.")
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "schema-change-sentinel", "version": "1.0.0"}
+
 @app.get("/")
-def read_root():
-    return {
-        "status": "ONLINE",
-        "system": "Schema Sentinel Engine",
-        "docs_url": "/docs"
-    }
+def root():
+    return {"message": "Schema Change Sentinel API", "docs": "/docs"}

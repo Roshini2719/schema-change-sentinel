@@ -1,0 +1,74 @@
+{
+  "schema_version": "3.0.0",
+  "schema_name": "PartnerA Transaction Schema",
+  "partner": "PartnerA (Stripe)",
+  "generated_at": "2026-10-29T04:54:33.593198",
+  "is_breaking": true,
+  "notes": "BREAKING: transaction_id (PK) removed.",
+  "columns": [
+    {
+      "column_name": "amount",
+      "data_type": "decimal",
+      "is_nullable": false,
+      "is_required": true,
+      "is_primary_key": false,
+      "description": "Transaction amount"
+    },
+    {
+      "column_name": "currency",
+      "data_type": "string",
+      "is_nullable": false,
+      "is_required": true,
+      "is_primary_key": false,
+      "description": "ISO 4217 currency code"
+    },
+    {
+      "column_name": "partner_id",
+      "data_type": "string",
+      "is_nullable": false,
+      "is_required": true,
+      "is_primary_key": false,
+      "description": "Partner identifier"
+    },
+    {
+      "column_name": "timestamp",
+      "data_type": "datetime",
+      "is_nullable": false,
+      "is_required": true,
+      "is_primary_key": false,
+      "description": "Transaction timestamp (UTC)"
+    },
+    {
+      "column_name": "merchant_id",
+      "data_type": "string",
+      "is_nullable": false,
+      "is_required": true,
+      "is_primary_key": false,
+      "description": "Merchant identifier"
+    },
+    {
+      "column_name": "status",
+      "data_type": "string",
+      "is_nullable": false,
+      "is_required": true,
+      "is_primary_key": false,
+      "description": "PENDING|SETTLED|FAILED"
+    },
+    {
+      "column_name": "card_last4",
+      "data_type": "string",
+      "is_nullable": true,
+      "is_required": false,
+      "is_primary_key": false,
+      "description": "Last 4 digits"
+    },
+    {
+      "column_name": "ip_address",
+      "data_type": "string",
+      "is_nullable": true,
+      "is_required": false,
+      "is_primary_key": false,
+      "description": "Client IP"
+    }
+  ]
+}
